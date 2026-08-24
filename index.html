@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>四年级语文背诵计划</title>
+<style>
+  :root{
+    --ink:#2b2118;        /* 墨色 */
+    --ink-soft:#6b5d4f;   /* 淡墨 */
+    --paper:#f7f1e3;      /* 宣纸 */
+    --paper-2:#efe6d0;
+    --seal:#b23a2e;       /* 印章红 */
+    --seal-soft:#d97a68;
+    --jade:#3f7561;       /* 青绿 */
+    --jade-soft:#e2ede6;
+    --gold:#b8873f;
+    --line:#ddceb0;
+    --shadow:0 2px 0 rgba(120,95,60,.12), 0 10px 30px -12px rgba(80,60,30,.4);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Kaiti SC","STKaiti","KaiTi","Songti SC",serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 15% 10%, rgba(210,190,150,.25), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(180,135,63,.12), transparent 45%),
+      #efe4cd;
+    min-height:100vh;
+    line-height:1.85;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:820px;margin:0 auto;padding:22px 16px 80px}
+
+  /* 顶栏 */
+  header.top{text-align:center;padding:18px 0 6px;position:relative}
+  header.top .seal{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:52px;height:52px;border-radius:8px;
+    background:var(--seal);color:#fff;font-size:24px;font-weight:700;
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.35), var(--shadow);
+    transform:rotate(-4deg);letter-spacing:-2px;
+  }
+  header.top h1{
+    font-size:26px;margin:12px 0 2px;letter-spacing:3px;font-weight:700;
+  }
+  header.top p{margin:0;color:var(--ink-soft);font-size:14px;letter-spacing:1px}
+
+  /* 概览统计 */
+  .stats{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 22px;
+  }
+  .stat{
+    background:var(--paper);border:1px solid var(--line);border-radius:12px;
+    padding:12px 8px;text-align:center;box-shadow:var(--shadow);
+  }
+  .stat .n{font-size:24px;font-weight:700;line-height:1.2}
+  .stat.due .n{color:var(--seal)}
+  .stat.done .n{color:var(--jade)}
+  .stat .l{font-size:12px;color:var(--ink-soft);letter-spacing:1px}
+
+  /* 分区标题 */
+  .section-h{
+    display:flex;align-items:center;gap:10px;margin:26px 4px 12px;
+    font-size:17px;letter-spacing:2px;
+  }
+  .section-h::before{content:"";width:6px;height:20px;background:var(--seal);border-radius:2px}
+  .section-h .count{font-size:13px;color:var(--ink-soft);font-weight:400;letter-spacing:0}
+
+  /* 卡片列表 */
+  .card{
+    background:var(--paper);border:1px solid var(--line);border-radius:14px;
+    padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow);
+    cursor:pointer;transition:transform .12s ease, box-shadow .12s ease;
+    position:relative;overflow:hidden;
+  }
+  .card:active{transform:scale(.99)}
+  .card .row1{display:flex;align-items:center;gap:10px}
+  .card .idx{
+    flex:0 0 auto;width:30px;height:30px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--jade-soft);color:var(--jade);font-weight:700;font-size:14px;
+  }
+  .card .title{flex:1;font-size:17px;font-weight:700;letter-spacing:1px}
+  .card .meta{font-size:12px;color:var(--ink-soft);margin-top:2px;letter-spacing:.5px}
+  .card .badge{
+    flex:0 0 auto;font-size:12px;padding:4px 10px;border-radius:20px;font-weight:700;letter-spacing:.5px;
+  }
+  .badge.due{background:#fbe6df;color:var(--seal)}
+  .badge.new{background:#e9e2cf;color:var(--gold)}
+  .badge.rest{background:var(--jade-soft);color:var(--jade)}
+  .card .stars{margin-top:6px;font-size:13px;letter-spacing:2px;color:var(--gold)}
+  .card .stars .empty{color:#d9ccae}
+  .card.due-card{border-color:var(--seal-soft)}
+  .card.due-card::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--seal)}
+
+  /* 遮罩 + 练习面板 */
+  .overlay{
+    position:fixed;inset:0;background:rgba(40,30,18,.55);
+    display:none;align-items:flex-end;justify-content:center;z-index:50;
+    backdrop-filter:blur(2px);
+  }
+  .overlay.show{display:flex}
+  .panel{
+    background:var(--paper);width:100%;max-width:820px;max-height:94vh;
+    border-radius:20px 20px 0 0;overflow-y:auto;
+    box-shadow:0 -10px 40px rgba(40,30,18,.4);
+    animation:up .28s cubic-bezier(.2,.8,.25,1);
+  }
+  @keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:translateY(0);opacity:1}}
+  .panel .phead{
+    position:sticky;top:0;background:var(--paper);z-index:2;
+    padding:16px 20px 12px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:12px;
+  }
+  .panel .phead .ttl{flex:1;font-size:19px;font-weight:700;letter-spacing:1px}
+  .panel .phead .sub{font-size:12px;color:var(--ink-soft);font-weight:400}
+  .close-x{
+    border:none;background:var(--paper-2);width:34px;height:34px;border-radius:50%;
+    font-size:18px;color:var(--ink);cursor:pointer;flex:0 0 auto;
+  }
+  .pbody{padding:18px 20px 30px}
+
+  .hint-orig{
+    background:var(--jade-soft);border:1px dashed var(--jade);border-radius:12px;
+    padding:12px 14px;margin-bottom:14px;white-space:pre-wrap;font-size:16px;
+    color:var(--ink);display:none;
+  }
+  .hint-orig.show{display:block}
+  .toggle-orig{
+    background:none;border:1px solid var(--line);border-radius:20px;
+    padding:6px 14px;font-size:13px;color:var(--ink-soft);cursor:pointer;
+    font-family:inherit;margin-bottom:12px;
+  }
+
+  .field-label{font-size:14px;color:var(--ink-soft);margin-bottom:6px;letter-spacing:1px}
+  textarea.input{
+    width:100%;min-height:150px;border:1px solid var(--line);border-radius:12px;
+    padding:12px 14px;font-family:inherit;font-size:17px;line-height:1.9;
+    background:#fffdf6;color:var(--ink);resize:vertical;
+  }
+  textarea.input:focus{outline:none;border-color:var(--jade);box-shadow:0 0 0 3px var(--jade-soft)}
+
+  .controls{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+  .btn{
+    font-family:inherit;font-size:16px;font-weight:700;letter-spacing:1px;
+    border:none;border-radius:12px;padding:12px 18px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:8px;transition:filter .12s;
+  }
+  .btn:active{filter:brightness(.94)}
+  .btn.mic{background:var(--jade);color:#fff;flex:1}
+  .btn.mic.rec{background:var(--seal);animation:pulse 1.1s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(178,58,46,.5)}50%{box-shadow:0 0 0 10px rgba(178,58,46,0)}}
+  .btn.submit{background:var(--gold);color:#fff;flex:1}
+  .btn.ghost{background:var(--paper-2);color:var(--ink)}
+  .mic-note{font-size:12px;color:var(--ink-soft);margin-top:8px}
+
+  /* 评分结果 */
+  .result{margin-top:18px;display:none}
+  .result.show{display:block;animation:fade .3s}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+  .score-ring{display:flex;align-items:center;gap:16px;margin-bottom:14px}
+  .ring{
+    width:88px;height:88px;border-radius:50%;flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    font-weight:700;position:relative;
+  }
+  .ring .pct{font-size:26px;line-height:1}
+  .ring .lbl{font-size:11px;font-weight:400;color:var(--ink-soft)}
+  .score-msg{font-size:16px}
+  .score-msg .big{font-size:20px;font-weight:700;display:block;margin-bottom:2px}
+
+  .diff-box{
+    background:#fffdf6;border:1px solid var(--line);border-radius:12px;
+    padding:12px 14px;font-size:17px;line-height:2;white-space:pre-wrap;margin-bottom:6px;
+  }
+  .diff-box .ok{color:var(--ink)}
+  .diff-box .wrong{background:#fbe0da;color:var(--seal);border-radius:4px;padding:0 2px;text-decoration:line-through}
+  .diff-box .miss{background:#fdf0d6;color:var(--gold);border-radius:4px;padding:0 2px}
+  .diff-legend{font-size:12px;color:var(--ink-soft);margin-bottom:14px}
+  .diff-legend span{margin-right:14px}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:3px}
+
+  .next-info{
+    background:var(--jade-soft);border-radius:12px;padding:12px 14px;font-size:14px;
+    color:var(--jade);text-align:center;margin-top:6px;
+  }
+
+  footer.foot{text-align:center;color:var(--ink-soft);font-size:12px;margin-top:30px;line-height:1.7}
+  .reset-link{color:var(--seal);cursor:pointer;text-decoration:underline}
+
+  @media(max-width:480px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    header.top h1{font-size:22px}
+    .card .title{font-size:16px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="seal">背</div>
+    <h1>四年级语文背诵计划</h1>
+    <p>2026 秋 · 上册全册必背 · 记忆曲线复习</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat due"><div class="n" id="s-due">0</div><div class="l">今日要背</div></div>
+    <div class="stat"><div class="n" id="s-learning">0</div><div class="l">复习中</div></div>
+    <div class="stat done"><div class="n" id="s-done">0</div><div class="l">已掌握</div></div>
+    <div class="stat"><div class="n" id="s-avg">—</div><div class="l">平均分</div></div>
+  </div>
+
+  <div id="list"></div>
+
+  <footer class="foot">
+    进度自动保存在本机 · 每天回来背一背今日要背的内容<br>
+    <span class="reset-link" id="reset">清空全部进度重新开始</span>
+  </footer>
+</div>
+
+<!-- 练习面板 -->
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <div class="phead">
+      <div style="flex:1">
+        <div class="ttl" id="p-title">课文</div>
+        <div class="sub" id="p-sub"></div>
+      </div>
+      <button class="close-x" id="p-close">✕</button>
+    </div>
+    <div class="pbody">
+      <button class="toggle-orig" id="toggle-orig">👀 先看一眼原文</button>
+      <div class="hint-orig" id="hint-orig"></div>
+
+      <div class="field-label">默写 / 背诵这段内容：</div>
+      <textarea class="input" id="answer" placeholder="在这里输入，或点下面的「语音输入」直接说出来～"></textarea>
+
+      <div class="controls">
+        <button class="btn mic" id="mic">🎤 语音输入</button>
+        <button class="btn submit" id="submit">✅ 提交评分</button>
+      </div>
+      <div class="mic-note" id="mic-note"></div>
+
+      <div class="result" id="result">
+        <div class="score-ring">
+          <div class="ring" id="ring"><span class="pct" id="ring-pct">0</span><span class="lbl">分</span></div>
+          <div class="score-msg"><span class="big" id="score-big"></span><span id="score-small"></span></div>
+        </div>
+        <div class="diff-legend">
+          <span><span class="dot" style="background:#fbe0da"></span>背错/多字</span>
+          <span><span class="dot" style="background:#fdf0d6"></span>漏字</span>
+        </div>
+        <div class="diff-box" id="diff-box"></div>
+        <div class="next-info" id="next-info"></div>
+        <div class="controls" style="margin-top:14px">
+          <button class="btn ghost" id="retry" style="flex:1">🔁 再背一次</button>
+          <button class="btn submit" id="finish" style="flex:1">完成，下一篇</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ 背诵内容数据（16 篇） ============ */
+const TEXTS = [
+  { id:1, title:"《观潮》第3-4自然段", meta:"课文",
+    text:`午后一点左右，从远处传来隆隆的响声，好像闷雷滚动。顿时人声鼎沸，有人告诉我们，潮来了！我们踮着脚往东望去，江面还是风平浪静，看不出有什么变化。过了一会儿，响声越来越大，只见东边水天相接的地方出现了一条白线，人群又沸腾起来。
+那条白线很快地向我们移来，逐渐拉长，变粗，横贯江面。再近些，只见白浪翻滚，形成一堵高高的水墙。浪潮越来越近，犹如千万匹白色战马齐头并进，浩浩荡荡地飞奔而来；那声音如同山崩地裂，好像大地都被震得颤动起来。` },
+  { id:2, title:"赠刘景文", meta:"〔宋〕苏轼",
+    text:`荷尽已无擎雨盖，菊残犹有傲霜枝。
+一年好景君须记，最是橙黄橘绿时。` },
+  { id:3, title:"暮江吟", meta:"〔唐〕白居易",
+    text:`一道残阳铺水中，半江瑟瑟半江红。
+可怜九月初三夜，露似真珠月似弓。` },
+  { id:4, title:"题西林壁", meta:"〔宋〕苏轼",
+    text:`横看成岭侧成峰，远近高低各不同。
+不识庐山真面目，只缘身在此山中。` },
+  { id:5, title:"雪梅", meta:"〔宋〕卢钺",
+    text:`梅雪争春未肯降，骚人阁笔费评章。
+梅须逊雪三分白，雪却输梅一段香。` },
+  { id:6, title:"日积月累二", meta:"名言",
+    text:`博学之，审问之，慎思之，明辨之，笃行之。——《礼记》
+智能之士，不学不成，不问不知。——王充
+人非生而知之者，孰能无惑？——韩愈
+善疑者，不疑人之所疑，而疑人之所不疑。——方以智` },
+  { id:7, title:"黄鹤楼送孟浩然之广陵", meta:"〔唐〕李白",
+    text:`故人西辞黄鹤楼，烟花三月下扬州。
+孤帆远影碧空尽，唯见长江天际流。` },
+  { id:8, title:"日积月累三", meta:"农谚",
+    text:`立了秋，把扇丢。
+二八月，乱穿衣。
+夏雨少，秋霜早。
+八月里来雁门开，雁儿脚上带霜来。
+一场秋雨一场寒，十场秋雨要穿棉。
+八月暖，九月温，十月还有小阳春。` },
+  { id:9, title:"《精卫填海》", meta:"文言文",
+    text:`炎帝之少女，名曰女娃。女娃游于东海，溺而不返，故为精卫，常衔西山之木石，以堙于东海。` },
+  { id:10, title:"嫦娥", meta:"〔唐〕李商隐",
+    text:`云母屏风烛影深，长河渐落晓星沉。
+嫦娥应悔偷灵药，碧海青天夜夜心。` },
+  { id:11, title:"《王戎不取道旁李》", meta:"文言文",
+    text:`王戎七岁，尝与诸小儿游。看道边李树多子折枝，诸儿竞走取之，唯戎不动。人问之，答曰："树在道边而多子，此必苦李。"取之，信然。` },
+  { id:12, title:"日积月累七", meta:"名言",
+    text:`尺有所短，寸有所长。
+机不可失，时不再来。
+差之毫厘，谬以千里。
+病从口入，祸从口出。
+一言既出，驷马难追。
+比上不足，比下有余。` },
+  { id:13, title:"凉州词", meta:"〔唐〕王翰",
+    text:`葡萄美酒夜光杯，欲饮琵琶马上催。
+醉卧沙场君莫笑，古来征战几人回？` },
+  { id:14, title:"出塞", meta:"〔唐〕王昌龄",
+    text:`秦时明月汉时关，万里长征人未还。
+但使龙城飞将在，不教胡马度阴山。` },
+  { id:15, title:"夏日绝句", meta:"〔宋〕李清照",
+    text:`生当作人杰，死亦为鬼雄。
+至今思项羽，不肯过江东。` },
+  { id:16, title:"别董大", meta:"〔唐〕高适",
+    text:`千里黄云白日曛，北风吹雁雪纷纷。
+莫愁前路无知己，天下谁人不识君！` },
+];
+
+/* ============ 记忆曲线（间隔天数，单位=天） ============ */
+const INTERVALS = [1, 2, 4, 7, 15, 30, 60]; // 每答对推进一档
+const STORE_KEY = "recite_plan_v1";
+
+/* 读/写进度 */
+function loadState(){
+  let s = {};
+  try { s = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch(e){ s = {}; }
+  TEXTS.forEach(t=>{
+    if(!s[t.id]) s[t.id] = { stage:-1, due:0, lastScore:null, reps:0 };
+  });
+  return s;
+}
+function saveState(s){ localStorage.setItem(STORE_KEY, JSON.stringify(s)); }
+let state = loadState();
+
+const today = () => { const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); };
+const DAY = 86400000;
+
+/* ============ 文本对比评分 ============ */
+// 只保留汉字和关键标点用于对比，宽松一点（去掉空白/英文标点差异）
+function normalize(str){
+  return (str||"")
+    .replace(/[\s]/g,"")
+    .replace(/[，,]/g,"，").replace(/[。.]/g,"。")
+    .replace(/[？?]/g,"？").replace(/[！!]/g,"！")
+    .replace(/[；;]/g,"；").replace(/[：:]/g,"：")
+    .replace(/["""'']/g,"");
+}
+// 只比汉字（评分核心，避免标点影响孩子积极性）
+function coreChars(str){ return (str||"").replace(/[^\u4e00-\u9fa5]/g,""); }
+
+// 最长公共子序列，用于对齐 diff
+function lcsMatrix(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},()=>new Int32Array(n+1));
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){
+    dp[i][j]= a[i-1]===b[j-1] ? dp[i-1][j-1]+1 : Math.max(dp[i-1][j],dp[i][j-1]);
+  }
+  return dp;
+}
+// 生成 diff：orig=原文 user=用户； 返回 {html, correct, total}
+function diffScore(origRaw, userRaw){
+  const orig = coreChars(origRaw);
+  const user = coreChars(userRaw);
+  const dp = lcsMatrix(orig,user);
+  // 回溯，标注在原文序列上
+  let i=orig.length, j=user.length;
+  const seq=[]; // {ch, type: ok|miss|extra}
+  while(i>0 && j>0){
+    if(orig[i-1]===user[j-1]){ seq.push({ch:orig[i-1],type:"ok"}); i--;j--; }
+    else if(dp[i-1][j] >= dp[i][j-1]){ seq.push({ch:orig[i-1],type:"miss"}); i--; }
+    else { seq.push({ch:user[j-1],type:"extra"}); j--; }
+  }
+  while(i>0){ seq.push({ch:orig[i-1],type:"miss"}); i--; }
+  while(j>0){ seq.push({ch:user[j-1],type:"extra"}); j--; }
+  seq.reverse();
+
+  const correct = seq.filter(s=>s.type==="ok").length;
+  const total = orig.length;
+  // 构建高亮 html
+  let html="";
+  seq.forEach(s=>{
+    if(s.type==="ok") html+=`<span class="ok">${s.ch}</span>`;
+    else if(s.type==="miss") html+=`<span class="miss">${s.ch}</span>`;
+    else html+=`<span class="wrong">${s.ch}</span>`;
+  });
+  const extra = seq.filter(s=>s.type==="extra").length;
+  // 分数：正确率，多字轻微扣分
+  let pct = total? Math.round(correct/total*100):0;
+  pct = Math.max(0, pct - Math.min(15, Math.round(extra/Math.max(total,1)*100*0.5)));
+  return { html, pct, correct, total, miss: total-correct, extra };
+}
+
+/* ============ 渲染列表 ============ */
+function statusOf(id){
+  const st = state[id];
+  if(st.stage < 0) return "new";
+  if(st.due <= today()) return "due";
+  if(st.stage >= INTERVALS.length-1) return "done";
+  return "rest";
+}
+function starHtml(score){
+  if(score==null) return "";
+  const full = Math.round(score/20); // 0-5
+  let s="";
+  for(let k=0;k<5;k++) s += k<full ? "★" : `<span class="empty">★</span>`;
+  return `<div class="stars">${s}</div>`;
+}
+function fmtDue(id){
+  const st=state[id];
+  if(st.stage<0) return "还没开始背";
+  if(st.due<=today()) return "今天要复习";
+  const days=Math.round((st.due-today())/DAY);
+  return `${days} 天后复习`;
+}
+
+function render(){
+  const list=document.getElementById("list");
+  const groups={ due:[], new:[], rest:[], done:[] };
+  TEXTS.forEach(t=> groups[statusOf(t.id)].push(t));
+
+  let html="";
+  const order=[
+    ["due","📌 今日要背", groups.due],
+    ["new","🌱 还没开始", groups.new],
+    ["rest","🕰️ 复习中（未到期）", groups.rest],
+    ["done","🏆 已掌握", groups.done],
+  ];
+  order.forEach(([key,label,arr])=>{
+    if(arr.length===0) return;
+    html+=`<div class="section-h">${label}<span class="count">${arr.length} 篇</span></div>`;
+    arr.forEach(t=>{
+      const st=state[t.id];
+      const stat=statusOf(t.id);
+      const badge = stat==="due"?`<span class="badge due">背</span>`
+                  : stat==="new"?`<span class="badge new">新</span>`
+                  : stat==="done"?`<span class="badge rest">✓</span>`
+                  : `<span class="badge rest">${Math.round((st.due-today())/DAY)}天</span>`;
+      html+=`
+       <div class="card ${stat==='due'?'due-card':''}" data-id="${t.id}">
+         <div class="row1">
+           <div class="idx">${t.id}</div>
+           <div style="flex:1">
+             <div class="title">${t.title}</div>
+             <div class="meta">${t.meta} · ${fmtDue(t.id)}</div>
+           </div>
+           ${badge}
+         </div>
+         ${starHtml(st.lastScore)}
+       </div>`;
+    });
+  });
+  list.innerHTML=html;
+
+  // 统计
+  const dueN=groups.due.length;
+  const doneN=groups.done.length;
+  const learnN=groups.rest.length + groups.due.length;
+  const scored=TEXTS.map(t=>state[t.id].lastScore).filter(v=>v!=null);
+  const avg=scored.length?Math.round(scored.reduce((a,b)=>a+b,0)/scored.length):null;
+  document.getElementById("s-due").textContent=dueN;
+  document.getElementById("s-learning").textContent=learnN;
+  document.getElementById("s-done").textContent=doneN;
+  document.getElementById("s-avg").textContent=avg==null?"—":avg;
+
+  document.querySelectorAll(".card").forEach(c=>{
+    c.addEventListener("click",()=>openPanel(+c.dataset.id));
+  });
+}
+
+/* ============ 练习面板逻辑 ============ */
+let curId=null;
+const overlay=document.getElementById("overlay");
+const hintOrig=document.getElementById("hint-orig");
+const answerEl=document.getElementById("answer");
+const resultEl=document.getElementById("result");
+
+function openPanel(id){
+  curId=id;
+  const t=TEXTS.find(x=>x.id===id);
+  document.getElementById("p-title").textContent=t.title;
+  document.getElementById("p-sub").textContent=t.meta;
+  hintOrig.textContent=t.text;
+  hintOrig.classList.remove("show");
+  document.getElementById("toggle-orig").textContent="👀 先看一眼原文";
+  answerEl.value="";
+  resultEl.classList.remove("show");
+  document.getElementById("mic-note").textContent="";
+  overlay.classList.add("show");
+  document.body.style.overflow="hidden";
+}
+function closePanel(){
+  overlay.classList.remove("show");
+  document.body.style.overflow="";
+  stopRec();
+  render();
+}
+document.getElementById("p-close").addEventListener("click",closePanel);
+overlay.addEventListener("click",e=>{ if(e.target===overlay) closePanel(); });
+
+document.getElementById("toggle-orig").addEventListener("click",()=>{
+  hintOrig.classList.toggle("show");
+  document.getElementById("toggle-orig").textContent =
+    hintOrig.classList.contains("show") ? "🙈 收起原文" : "👀 先看一眼原文";
+});
+
+/* 提交评分 */
+document.getElementById("submit").addEventListener("click",submitAnswer);
+document.getElementById("retry").addEventListener("click",()=>{
+  answerEl.value=""; resultEl.classList.remove("show"); answerEl.focus();
+});
+document.getElementById("finish").addEventListener("click",closePanel);
+
+function submitAnswer(){
+  const t=TEXTS.find(x=>x.id===curId);
+  if(!answerEl.value.trim()){ answerEl.focus(); return; }
+  const r=diffScore(t.text, answerEl.value);
+
+  // 更新记忆曲线
+  const st=state[curId];
+  st.lastScore=r.pct;
+  st.reps=(st.reps||0)+1;
+  if(r.pct>=85){
+    st.stage=Math.min(st.stage+1, INTERVALS.length-1);
+  } else if(r.pct>=60){
+    st.stage=Math.max(0, st.stage); // 保持
+  } else {
+    st.stage=0; // 打回重来
+  }
+  const interval=INTERVALS[st.stage];
+  st.due=today()+interval*DAY;
+  saveState(state);
+
+  showResult(r, interval, st);
+}
+
+function showResult(r, interval, st){
+  const ring=document.getElementById("ring");
+  const c = r.pct>=85 ? "var(--jade)" : r.pct>=60 ? "var(--gold)" : "var(--seal)";
+  ring.style.background=`conic-gradient(${c} ${r.pct*3.6}deg, #e6dcc4 0)`;
+  ring.innerHTML=`<span class="pct" style="color:${c}">${r.pct}</span><span class="lbl">分</span>`;
+  // 内圈
+  ring.style.position="relative";
+
+  let big,small;
+  if(r.pct>=95){ big="太厉害啦！🎉"; small="几乎全对，背得滚瓜烂熟～"; }
+  else if(r.pct>=85){ big="背得很棒！👍"; small="已经很熟练，可以拉长复习间隔了。"; }
+  else if(r.pct>=60){ big="不错，再巩固一下 💪"; small="大部分都对，看看标出来的地方。"; }
+  else { big="别灰心，多背两遍 🌱"; small="还有些没记住，明天再来一次就好。"; }
+  document.getElementById("score-big").textContent=big;
+  document.getElementById("score-small").textContent=small
+    + `（对 ${r.correct}/${r.total} 字${r.miss?`，漏 ${r.miss}`:""}${r.extra?`，多 ${r.extra}`:""}）`;
+
+  document.getElementById("diff-box").innerHTML=r.html || "（没有内容）";
+
+  const nextDate=new Date(st.due);
+  const md=`${nextDate.getMonth()+1}月${nextDate.getDate()}日`;
+  document.getElementById("next-info").textContent=
+    `📅 下次复习：${interval} 天后（${md}）`;
+
+  resultEl.classList.add("show");
+  resultEl.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+/* ============ 语音识别 ============ */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec=null, recActive=false;
+const micBtn=document.getElementById("mic");
+const micNote=document.getElementById("mic-note");
+
+function stopRec(){
+  if(rec && recActive){ try{rec.stop();}catch(e){} }
+  recActive=false;
+  micBtn.classList.remove("rec");
+  micBtn.textContent="🎤 语音输入";
+}
+
+micBtn.addEventListener("click",()=>{
+  if(!SR){
+    micNote.textContent="⚠️ 当前浏览器不支持语音识别，建议用电脑或手机上的 Chrome 浏览器打开。你也可以直接打字～";
+    return;
+  }
+  if(recActive){ stopRec(); return; }
+
+  rec=new SR();
+  rec.lang="zh-CN";
+  rec.continuous=true;
+  rec.interimResults=true;
+  let base=answerEl.value;
+  let finalBuf="";
+
+  rec.onstart=()=>{
+    recActive=true;
+    micBtn.classList.add("rec");
+    micBtn.textContent="⏹ 停止录音";
+    micNote.textContent="🔴 正在听… 请对着麦克风背诵，说完点「停止录音」";
+  };
+  rec.onresult=(e)=>{
+    let interim="";
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const tr=e.results[i][0].transcript;
+      if(e.results[i].isFinal) finalBuf+=tr;
+      else interim+=tr;
+    }
+    answerEl.value=(base?base:"")+finalBuf+interim;
+  };
+  rec.onerror=(e)=>{
+    recActive=false;
+    micBtn.classList.remove("rec");
+    micBtn.textContent="🎤 语音输入";
+    if(e.error==="not-allowed"||e.error==="service-not-allowed")
+      micNote.textContent="⚠️ 麦克风被拒绝了。请在浏览器地址栏允许麦克风权限后再试。";
+    else if(e.error==="no-speech")
+      micNote.textContent="没听到声音，再试一次吧～";
+    else micNote.textContent="识别出错："+e.error;
+  };
+  rec.onend=()=>{
+    if(recActive){ // continuous 有时会自动断，尝试续上
+      try{ base=answerEl.value; finalBuf=""; rec.start(); return; }catch(e){}
+    }
+    micBtn.classList.remove("rec");
+    micBtn.textContent="🎤 语音输入";
+    if(micNote.textContent.startsWith("🔴")) micNote.textContent="录音结束，检查一下识别的文字，可手动修改后提交。";
+  };
+  try{ rec.start(); }catch(e){ micNote.textContent="无法启动录音，请重试。"; }
+});
+
+/* ============ 重置 ============ */
+document.getElementById("reset").addEventListener("click",()=>{
+  if(confirm("确定要清空全部背诵进度吗？此操作无法撤销。")){
+    localStorage.removeItem(STORE_KEY);
+    state=loadState();
+    render();
+  }
+});
+
+render();
+</script>
+</body>
+</html>
