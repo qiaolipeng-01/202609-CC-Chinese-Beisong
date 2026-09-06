@@ -328,16 +328,28 @@ const TEXTS = [
 const INTERVALS = [1, 2, 4, 7, 15, 30, 60]; // 每答对推进一档
 const STORE_KEY = "recite_plan_v1";
 
-/* 读/写进度 */
+/* 读/写进度：localStorage 不可用时（iPad 本地打开 / 隐私模式）自动降级为内存存储，保证不白屏 */
+let LS_OK = false;
+try { localStorage.setItem("__t","1"); localStorage.removeItem("__t"); LS_OK = true; } catch(e){ LS_OK = false; }
+let memStore = null; // 内存降级用
+
 function loadState(){
   let s = {};
-  try { s = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch(e){ s = {}; }
+  try {
+    if(LS_OK){ s = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+    else if(memStore){ s = memStore; }
+  } catch(e){ s = {}; }
   TEXTS.forEach(t=>{
     if(!s[t.id]) s[t.id] = { stage:-1, due:0, lastScore:null, reps:0 };
   });
   return s;
 }
-function saveState(s){ localStorage.setItem(STORE_KEY, JSON.stringify(s)); }
+function saveState(s){
+  try {
+    if(LS_OK){ localStorage.setItem(STORE_KEY, JSON.stringify(s)); }
+    else { memStore = s; }
+  } catch(e){ memStore = s; }
+}
 let state = loadState();
 
 const today = () => { const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); };
@@ -497,13 +509,19 @@ function openPanel(id){
   document.body.style.overflow="hidden";
 }
 function closePanel(){
+  // 已经写了内容但还没评分，关闭前确认一下，防止误关丢失
+  const typed = answerEl.value.trim();
+  const shown = resultEl.classList.contains("show");
+  if(typed && !shown){
+    if(!confirm("还没提交评分，确定要关闭吗？已输入的内容会清空。")) return;
+  }
   overlay.classList.remove("show");
   document.body.style.overflow="";
   stopRec();
   render();
 }
 document.getElementById("p-close").addEventListener("click",closePanel);
-overlay.addEventListener("click",e=>{ if(e.target===overlay) closePanel(); });
+/* 只允许点右上角 ✕ 关闭，点弹窗外面不再误关，避免背到一半内容丢失 */
 
 document.getElementById("toggle-orig").addEventListener("click",()=>{
   hintOrig.classList.toggle("show");
@@ -635,13 +653,29 @@ micBtn.addEventListener("click",()=>{
 /* ============ 重置 ============ */
 document.getElementById("reset").addEventListener("click",()=>{
   if(confirm("确定要清空全部背诵进度吗？此操作无法撤销。")){
-    localStorage.removeItem(STORE_KEY);
+    try{ if(LS_OK) localStorage.removeItem(STORE_KEY); }catch(e){}
+    memStore=null;
     state=loadState();
     render();
   }
 });
 
-render();
+/* 若存储不可用，顶部给个温和提示（不影响使用） */
+if(!LS_OK){
+  const note=document.createElement("div");
+  note.style.cssText="background:#fdf0d6;border:1px solid #e6d29a;color:#8a6a1f;border-radius:12px;padding:10px 14px;margin:0 4px 14px;font-size:13px;line-height:1.6;text-align:center";
+  note.innerHTML="ℹ️ 当前打开方式无法长期保存进度，本次背诵结果只在这个页面有效。<br>建议用 <b>Chrome / Safari 浏览器</b> 打开网址版本，进度就能自动保存啦。";
+  document.querySelector(".wrap").insertBefore(note, document.getElementById("list"));
+}
+
+/* 保证任何异常都不白屏 */
+try{
+  render();
+}catch(err){
+  document.getElementById("list").innerHTML=
+    '<div style="background:#fbe0da;color:#b23a2e;border-radius:12px;padding:16px;text-align:center">'
+    +'页面加载出错了：'+(err&&err.message?err.message:err)+'</div>';
+}
 </script>
 </body>
 </html>
